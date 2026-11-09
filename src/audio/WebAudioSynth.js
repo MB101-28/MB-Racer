@@ -889,6 +889,193 @@ export function createDeskRacerHybridAudio(options = {}) {
     });
   }
 
+  /**
+   * Sparkling crystalline ascending arpeggio when running over a 3D Powerup Box! ⚡
+   */
+  function playPowerupPickup() {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    const notes = [
+      { freq: 659.25, time: 0.00, dur: 0.12, gain: 0.16 }, // E5
+      { freq: 830.61, time: 0.05, dur: 0.14, gain: 0.18 }, // G#5
+      { freq: 987.77, time: 0.10, dur: 0.16, gain: 0.20 }, // B5
+      { freq: 1318.51, time: 0.15, dur: 0.28, gain: 0.22 }, // E6
+      { freq: 1661.22, time: 0.20, dur: 0.35, gain: 0.18 }, // G#6 shimmer
+    ];
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(4200, now);
+    filter.Q.value = 1.2;
+    filter.connect(masterGain);
+
+    notes.forEach(({ freq, time, dur, gain }) => {
+      const t0 = now + time;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.02, t0 + dur);
+
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(gain, t0 + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+      osc.connect(g);
+      g.connect(filter);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.01);
+    });
+  }
+
+  /**
+   * Crisp roulette tick sound while cycling through powerup emojis 🎰
+   */
+  function playPowerupRouletteTick() {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1600 + Math.random() * 400, now);
+    g.gain.setValueAtTime(0.08, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + 0.02);
+  }
+
+  /**
+   * Cheerful high bell ding when item lock is finalized ✨
+   */
+  function playPowerupReady() {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    const chord = [
+      { freq: 1046.50, dur: 0.24, gain: 0.15 }, // C6
+      { freq: 1318.51, dur: 0.28, gain: 0.18 }, // E6
+      { freq: 2093.00, dur: 0.38, gain: 0.14 }, // C7
+    ];
+    chord.forEach(({ freq, dur, gain }) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(gain, now + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + dur + 0.01);
+    });
+  }
+
+  /**
+   * High-octane activation SFX tailored to each powerup item 🚀
+   * @param {string} type 'TURBO' | 'SHIELD' | 'ROCKET' | 'MAGNET' | 'WARP' | 'SHOCKWAVE'
+   */
+  function playPowerupActivate(type) {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+
+    if (type === 'TURBO' || type === 'ROCKET') {
+      const dur = type === 'ROCKET' ? 0.72 : 0.52;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(type === 'ROCKET' ? 840 : 620, now + dur * 0.75);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(600, now);
+      filter.frequency.exponentialRampToValueAtTime(4800, now + dur * 0.45);
+      filter.frequency.exponentialRampToValueAtTime(900, now + dur);
+
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.24, now + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      osc.connect(filter);
+      filter.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+    } else if (type === 'SHIELD') {
+      const dur = 0.55;
+      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.03);
+        osc.frequency.linearRampToValueAtTime(freq * 1.08, now + dur);
+
+        g.gain.setValueAtTime(0.0001, now + idx * 0.03);
+        g.gain.linearRampToValueAtTime(0.12, now + idx * 0.03 + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(now + idx * 0.03);
+        osc.stop(now + dur + 0.02);
+      });
+    } else if (type === 'MAGNET') {
+      const dur = 0.42;
+      for (let i = 0; i < 4; i++) {
+        const t0 = now + i * 0.08;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(920 - i * 110, t0);
+        osc.frequency.exponentialRampToValueAtTime(320, t0 + 0.06);
+
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.15, t0 + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(t0);
+        osc.stop(t0 + 0.07);
+      }
+    } else if (type === 'WARP') {
+      const dur = 0.65;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1100, now);
+      osc.frequency.exponentialRampToValueAtTime(380, now + dur * 0.45);
+      osc.frequency.exponentialRampToValueAtTime(1480, now + dur);
+
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.20, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+    } else if (type === 'SHOCKWAVE') {
+      const dur = 0.58;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.exponentialRampToValueAtTime(34, now + dur);
+
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.35, now + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+    }
+  }
+
   return {
     preload,
     toggle,
@@ -899,6 +1086,10 @@ export function createDeskRacerHybridAudio(options = {}) {
     playRailImpact,
     playF1CountdownBeep,
     triggerSputterBurst,
+    playPowerupPickup,
+    playPowerupRouletteTick,
+    playPowerupReady,
+    playPowerupActivate,
     setRumbleAmount: (v) => {
       userRumbleAmount = Math.max(0.0, Math.min(2.5, Number(v)));
     },

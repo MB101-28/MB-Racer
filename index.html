@@ -26,8 +26,11 @@
 
     <!-- Streamlined HUD Overlay -->
     <div id="hud-root">
+      <!-- Top Hover Sensor: Peeks full HUD when hovering near top edge while driving -->
+      <div id="hud-top-hover-zone" class="hud-top-hover-zone" aria-hidden="true"></div>
+
       <!-- Top Row: Clickable "Desk Racer" Title (Top-Left) & Lap Counter/Timer + Mute Icon (Top-Right) -->
-      <header class="hud-top-bar">
+      <header class="hud-top-bar" id="hud-top-bar">
         <div class="hud-top-left-stack">
           <div
             id="hud-brand-logo"
@@ -40,6 +43,25 @@
 
         <div class="hud-settings-anchor">
           <div class="hud-top-right-row">
+            <!-- Center-Right Powerup Item Box Widget (Click or Press SPACE to use) -->
+            <div
+              id="hud-powerup-widget"
+              class="hud-powerup-widget is-empty"
+              role="button"
+              tabindex="0"
+              title="Drive into 3D boxes on track! Press [SPACE] to activate"
+            >
+              <div class="powerup-slot-frame">
+                <span id="hud-powerup-emoji" class="powerup-emoji">❓</span>
+                <div id="hud-powerup-timer-bar" class="powerup-timer-bar hidden"></div>
+              </div>
+              <div class="powerup-info-col">
+                <div class="powerup-status-label" id="hud-powerup-status">POWERUP</div>
+                <div class="powerup-name-label" id="hud-powerup-name">DRIVE INTO ❓ BOX</div>
+              </div>
+              <div class="powerup-action-badge" id="hud-powerup-key"><kbd>SPACE</kbd></div>
+            </div>
+
             <!-- Top-Right Lap Counter & Lap Timer (Visible in 1P & 2P Views) -->
             <div id="hud-lap-widget" class="hud-lap-widget">
               <div id="hud-lap-header" class="hud-lap-header">
@@ -74,10 +96,15 @@
         </div>
       </header>
 
+      <!-- Dynamic Center Powerup Banner Notification -->
+      <div id="hud-powerup-banner" class="hud-powerup-banner hidden" aria-live="polite">
+        <span id="hud-powerup-banner-text">⚡ TURBO NITRO ACTIVATED!</span>
+      </div>
+
       <!-- Welcome & Controls Dialog (Shown on Launch & When Clicking "Desk Racer") -->
       <div id="welcome-dialog-overlay" class="welcome-dialog-overlay">
         <div class="welcome-dialog-card" role="dialog" aria-labelledby="welcome-title">
-          <div class="welcome-eyebrow">DESKTOP CIRCUIT · 3 LAPS</div>
+          <div class="welcome-eyebrow">DESKTOP CIRCUIT · 3 LAPS · POWERUPS ON TRACK ⚡</div>
           <h1 id="welcome-title" class="welcome-title">DESK RACER</h1>
 
           <div class="welcome-controls-grid">
@@ -104,6 +131,18 @@
                   </div>
                   <span>BRAKE</span>
                 </div>
+                <div class="control-key-row">
+                  <div class="control-kbd-pair">
+                    <kbd class="welcome-key welcome-key-gold">SPACE</kbd>
+                  </div>
+                  <span>USE POWERUP ⚡</span>
+                </div>
+                <div class="control-key-row">
+                  <div class="control-kbd-pair">
+                    <kbd class="welcome-key welcome-key-cyan">H</kbd>
+                  </div>
+                  <span>TOGGLE HUD 🏎️</span>
+                </div>
               </div>
             </div>
 
@@ -116,6 +155,19 @@
                 <div class="cam-key-row cam-pill" data-cam="3"><kbd class="welcome-key welcome-key-cyan">3</kbd><span>FULL DESK VIEW</span></div>
                 <div class="cam-key-row cam-pill" data-cam="4"><kbd class="welcome-key welcome-key-cyan">4</kbd><span>DRONE VIEW</span></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Powerup Guide Row -->
+          <div class="welcome-powerups-card">
+            <div class="welcome-control-label">POWERUP ARSENAL 🏎️💨</div>
+            <div class="welcome-powerup-items">
+              <div class="welcome-powerup-item" title="Turbo Nitro Boost"><span class="wp-emoji">⚡</span><span class="wp-label">TURBO</span></div>
+              <div class="welcome-powerup-item" title="Holo Forcefield Shield"><span class="wp-emoji">🛡️</span><span class="wp-label">SHIELD</span></div>
+              <div class="welcome-powerup-item" title="Super Rocket Launcher"><span class="wp-emoji">🚀</span><span class="wp-label">ROCKET</span></div>
+              <div class="welcome-powerup-item" title="Apex Line Magnet"><span class="wp-emoji">🧲</span><span class="wp-label">MAGNET</span></div>
+              <div class="welcome-powerup-item" title="Time Warp Overdrive"><span class="wp-emoji">⏱️</span><span class="wp-label">WARP</span></div>
+              <div class="welcome-powerup-item" title="EMP Shockwave Blast"><span class="wp-emoji">💣</span><span class="wp-label">BLAST</span></div>
             </div>
           </div>
 
@@ -235,6 +287,22 @@
                 <polyline points="6 17 11 12 6 7" opacity="0.45"></polyline>
               </svg>
               <span class="mobile-ctrl-label">RIGHT</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Center Powerup Activation Button on Mobile -->
+        <div class="mobile-ctrl-cluster mobile-powerup-cluster" role="group" aria-label="Powerup Item">
+          <button
+            id="btn-touch-powerup"
+            class="mobile-ctrl-btn mobile-ctrl-powerup is-empty"
+            type="button"
+            aria-label="Activate Powerup"
+            title="Activate Powerup"
+          >
+            <span class="mobile-ctrl-inner">
+              <span id="btn-touch-powerup-emoji" class="mobile-powerup-icon">❓</span>
+              <span class="mobile-ctrl-label" id="btn-touch-powerup-label">ITEM</span>
             </span>
           </button>
         </div>

@@ -17,6 +17,7 @@ import { buildGoldenHourAtmosphere } from './scene/GoldenHourAtmosphere.js';
 import { buildRoomEnvironment } from './scene/RoomEnvironmentBuilder.js';
 import { createKartPhysicsController } from './physics/KartPhysicsController.js';
 import { createWebAudioSynth } from './audio/WebAudioSynth.js';
+import { createPowerupManager } from './game/PowerupManager.js';
 
 async function initApp() {
   const container = document.getElementById('canvas-container');
@@ -813,6 +814,144 @@ async function initApp() {
       }
       camShakeTimer = 0.18;
       camShakeIntensity = THREE.MathUtils.clamp(severity, 0.35, 1.0);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // 4b. 3D POWERUP BOXES & DYNAMIC RACING ITEMS (⚡ 🛡️ 🚀 🧲 ⏱️ 💣)
+  // -------------------------------------------------------------------------
+  const elPowerupWidget = document.getElementById('hud-powerup-widget');
+  const elPowerupEmoji = document.getElementById('hud-powerup-emoji');
+  const elPowerupStatus = document.getElementById('hud-powerup-status');
+  const elPowerupName = document.getElementById('hud-powerup-name');
+  const elPowerupTimerBar = document.getElementById('hud-powerup-timer-bar');
+  const elPowerupBanner = document.getElementById('hud-powerup-banner');
+  const elPowerupBannerText = document.getElementById('hud-powerup-banner-text');
+  const btnTouchPowerup = document.getElementById('btn-touch-powerup');
+  const btnTouchPowerupEmoji = document.getElementById('btn-touch-powerup-emoji');
+  const btnTouchPowerupLabel = document.getElementById('btn-touch-powerup-label');
+
+  let bannerTimeout = null;
+  function showPowerupBanner(text, accentColor = '#00e5ff') {
+    if (!elPowerupBanner || !elPowerupBannerText) return;
+    if (bannerTimeout) clearTimeout(bannerTimeout);
+    elPowerupBannerText.textContent = text;
+    elPowerupBanner.style.borderColor = accentColor;
+    elPowerupBanner.style.boxShadow = `0 16px 48px rgba(0, 0, 0, 0.95), 0 0 32px ${accentColor}88`;
+    elPowerupBanner.classList.remove('hidden');
+    bannerTimeout = setTimeout(() => {
+      elPowerupBanner.classList.add('hidden');
+      bannerTimeout = null;
+    }, 2200);
+  }
+
+  const powerupManager = createPowerupManager({
+    scene,
+    physics,
+    microKart,
+    audioSynth,
+    onBannerAlert: (msg, color) => {
+      showPowerupBanner(msg, color);
+    },
+    onInventoryChange: ({ storedItem, activeItem, isSpinning, currentRouletteKey }) => {
+      if (!elPowerupWidget) return;
+
+      if (isSpinning) {
+        elPowerupWidget.className = 'hud-powerup-widget is-ready';
+        if (elPowerupEmoji) elPowerupEmoji.textContent = '🎰';
+        if (elPowerupStatus) elPowerupStatus.textContent = 'ROULETTE';
+        if (elPowerupName) elPowerupName.textContent = 'CYCLING...';
+        if (elPowerupTimerBar) elPowerupTimerBar.classList.add('hidden');
+        if (btnTouchPowerup) {
+          btnTouchPowerup.className = 'mobile-ctrl-btn mobile-ctrl-powerup is-ready';
+          if (btnTouchPowerupEmoji) btnTouchPowerupEmoji.textContent = '🎰';
+          if (btnTouchPowerupLabel) btnTouchPowerupLabel.textContent = 'SPIN';
+        }
+      } else if (activeItem) {
+        elPowerupWidget.className = 'hud-powerup-widget is-active';
+        if (elPowerupEmoji) elPowerupEmoji.textContent = activeItem.emoji;
+        if (elPowerupStatus) elPowerupStatus.textContent = 'ACTIVE';
+        if (elPowerupName) elPowerupName.textContent = activeItem.name;
+        if (elPowerupTimerBar) {
+          elPowerupTimerBar.classList.remove('hidden');
+          const pct = Math.max(0, (activeItem.remaining / activeItem.totalDuration) * 100);
+          elPowerupTimerBar.style.width = `${pct}%`;
+          elPowerupTimerBar.style.backgroundColor = activeItem.accentColor;
+        }
+        if (btnTouchPowerup) {
+          btnTouchPowerup.className = 'mobile-ctrl-btn mobile-ctrl-powerup is-pressed';
+          if (btnTouchPowerupEmoji) btnTouchPowerupEmoji.textContent = activeItem.emoji;
+          if (btnTouchPowerupLabel) btnTouchPowerupLabel.textContent = 'ACTIVE';
+        }
+      } else if (storedItem) {
+        elPowerupWidget.className = 'hud-powerup-widget is-ready';
+        if (elPowerupEmoji) elPowerupEmoji.textContent = storedItem.emoji;
+        if (elPowerupStatus) elPowerupStatus.textContent = 'READY · [SPACE]';
+        if (elPowerupName) elPowerupName.textContent = storedItem.name;
+        if (elPowerupTimerBar) elPowerupTimerBar.classList.add('hidden');
+        if (btnTouchPowerup) {
+          btnTouchPowerup.className = 'mobile-ctrl-btn mobile-ctrl-powerup is-ready';
+          if (btnTouchPowerupEmoji) btnTouchPowerupEmoji.textContent = storedItem.emoji;
+          if (btnTouchPowerupLabel) btnTouchPowerupLabel.textContent = 'USE!';
+        }
+      } else {
+        elPowerupWidget.className = 'hud-powerup-widget is-empty';
+        if (elPowerupEmoji) elPowerupEmoji.textContent = '❓';
+        if (elPowerupStatus) elPowerupStatus.textContent = 'POWERUP';
+        if (elPowerupName) elPowerupName.textContent = 'DRIVE INTO ❓ BOX';
+        if (elPowerupTimerBar) elPowerupTimerBar.classList.add('hidden');
+        if (btnTouchPowerup) {
+          btnTouchPowerup.className = 'mobile-ctrl-btn mobile-ctrl-powerup is-empty';
+          if (btnTouchPowerupEmoji) btnTouchPowerupEmoji.textContent = '❓';
+          if (btnTouchPowerupLabel) btnTouchPowerupLabel.textContent = 'ITEM';
+        }
+      }
+    },
+  });
+
+  if (elPowerupWidget) {
+    elPowerupWidget.addEventListener('click', () => {
+      powerupManager.activatePowerup();
+    });
+  }
+
+  if (btnTouchPowerup) {
+    btnTouchPowerup.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      powerupManager.activatePowerup();
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // 4c. CLEAN COCKPIT / IMMERSIVE DRIVING HUD MODE (Only Speed, Map & Active Item)
+  // -------------------------------------------------------------------------
+  const elHudRoot = document.getElementById('hud-root');
+  const elTopBar = document.getElementById('hud-top-bar');
+  const elTopHoverZone = document.getElementById('hud-top-hover-zone');
+
+  let isDrivingHudMode = false;
+  let hudManualOverride = false;
+
+  function setDrivingHudMode(enable) {
+    isDrivingHudMode = Boolean(enable);
+    if (elHudRoot) {
+      elHudRoot.classList.toggle('hud-driving-mode', isDrivingHudMode);
+    }
+  }
+
+  // Top Edge Mouse Sensor: Peek full HUD when hovering near top of screen
+  if (elTopHoverZone && elTopBar) {
+    elTopHoverZone.addEventListener('mouseenter', () => {
+      elTopBar.classList.add('peek-active');
+    });
+    elTopHoverZone.addEventListener('mouseleave', () => {
+      elTopBar.classList.remove('peek-active');
+    });
+    elTopBar.addEventListener('mouseenter', () => {
+      elTopBar.classList.add('peek-active');
+    });
+    elTopBar.addEventListener('mouseleave', () => {
+      elTopBar.classList.remove('peek-active');
     });
   }
 
@@ -1855,6 +1994,10 @@ async function initApp() {
       radarCtx.drawImage(radarBgCanvas, 0, 0);
     }
 
+    if (powerupManager) {
+      powerupManager.drawMinimapMarkers(radarCtx, mapMinimapX, mapMinimapY);
+    }
+
     const kx = mapMinimapX(st.position.x, st.position.y, st.position.z);
     const ky = mapMinimapY(st.position.x, st.position.y, st.position.z);
 
@@ -1954,6 +2097,7 @@ async function initApp() {
 
   function showFinishOverlay(totalTime, bestLap, playAudio = true) {
     hideLapSplit();
+    setDrivingHudMode(false);
     if (elFinishTime) {
       elFinishTime.textContent = formatLapTimerMMSSCC(totalTime);
     }
@@ -2087,6 +2231,9 @@ async function initApp() {
       }
       physics.state.countdownLocked = false;
       physics.state.raceClockActive = true; // Lap timer immediately starts ticking!
+      if (!hudManualOverride) {
+        setDrivingHudMode(true);
+      }
       if (physics.notifyLightsOut) {
         physics.notifyLightsOut();
       }
@@ -2321,6 +2468,7 @@ async function initApp() {
   syncMobileTouchControlsVisibility();
 
   function showWelcomeDialog() {
+    setDrivingHudMode(false);
     if (elWelcomeOverlay) {
       elWelcomeOverlay.classList.remove('hidden');
       focusWelcomeStartButton();
@@ -2363,6 +2511,8 @@ async function initApp() {
     hideWelcomeDialog();
     hideFinishOverlay();
     hideLapSplit();
+    hudManualOverride = false;
+    setDrivingHudMode(true);
     startF1StartCountdown();
   }
 
@@ -2411,12 +2561,30 @@ async function initApp() {
   window.addEventListener('keydown', (e) => {
     if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName) && !e.target.readOnly) return;
     if (e.repeat) return;
+    if (e.code === 'KeyH') {
+      e.preventDefault();
+      hudManualOverride = true;
+      setDrivingHudMode(!isDrivingHudMode);
+      if (typeof showPowerupBanner === 'function') {
+        showPowerupBanner(
+          isDrivingHudMode ? '🏎️ MINIMAL DRIVING HUD' : '🖥️ FULL RACING HUD',
+          isDrivingHudMode ? '#00e5ff' : '#ffaa00'
+        );
+      }
+      return;
+    }
     if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.key === 'Enter') {
       e.preventDefault();
       dismissWelcomeAndStartRace();
     } else if (
       e.code === 'KeyW' ||
-      e.code === 'ArrowUp' ||
+      e.code === 'ArrowUp'
+    ) {
+      hideWelcomeDialog();
+      if (!hudManualOverride) {
+        setDrivingHudMode(true);
+      }
+    } else if (
       e.code === 'KeyA' ||
       e.code === 'KeyD' ||
       e.code === 'ArrowLeft' ||
@@ -2540,6 +2708,12 @@ async function initApp() {
   }
   if (urlParams.get('boost') === '1') {
     physics.state.boostActive = 1.5;
+  }
+  if (urlParams.has('powerup')) {
+    const pKey = urlParams.get('powerup').toUpperCase();
+    if (powerupManager) {
+      powerupManager.givePowerup(pKey);
+    }
   }
   if (urlParams.has('laptime')) {
     const requestedLapTime = parseFloat(urlParams.get('laptime'));
@@ -2697,6 +2871,22 @@ async function initApp() {
 
     // 1. Step 60FPS Rapier3D + Banked Coaster Spline Physics
     const st = physics.stepPhysics(dt);
+
+    // 1b. Step 3D Powerup System (Boxes, Collision, Active Boost/Shield/Magnet)
+    if (powerupManager) {
+      powerupManager.update(dt, elapsedTime, st);
+    }
+
+    // 1c. Automatic Clean Driving HUD transition when rolling on track
+    if (
+      !isDrivingHudMode &&
+      !hudManualOverride &&
+      Math.abs(st.speed) > 0.02 &&
+      (!elWelcomeOverlay || elWelcomeOverlay.classList.contains('hidden')) &&
+      (!elFinishOverlay || elFinishOverlay.classList.contains('hidden'))
+    ) {
+      setDrivingHudMode(true);
+    }
 
     // 2. Sync 1:87 Micro-Kart Transform, Wheels, Helmeted Driver & Drift Sparks
     microKart.kartRoot.position.copy(st.position);
