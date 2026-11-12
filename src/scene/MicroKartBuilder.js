@@ -5,13 +5,17 @@ import * as THREE from 'three';
  * with 4 steerable/spinning wheels, helmeted driver, steering wheel,
  * twin turbo exhaust flames, headlights, and a 120-particle drift spark emitter.
  */
-export function buildMicroKart() {
+export function buildMicroKart(options = {}) {
+  const helmetColor = options.helmetColor ?? 0xffffff;
+  const visorColor = options.visorColor ?? 0x1e6bff;
+  const kartName = options.name ?? 'Kart1to87Root';
+
   const kartRoot = new THREE.Group();
-  kartRoot.name = 'Kart1to87Root';
+  kartRoot.name = kartName;
 
   // Inner suspension/drift yaw-roll body group
   const chassisGroup = new THREE.Group();
-  chassisGroup.name = 'KartChassisBody';
+  chassisGroup.name = `${kartName}ChassisBody`;
   kartRoot.add(chassisGroup);
 
   const redFairingMat = new THREE.MeshStandardMaterial({
@@ -450,24 +454,28 @@ export function buildMicroKart() {
   const driverHead = new THREE.Group();
   driverHead.position.set(0, 0.0078, -0.0004);
 
+  const helmetMat = new THREE.MeshStandardMaterial({
+    color: helmetColor,
+    emissive: new THREE.Color(helmetColor),
+    emissiveIntensity: 0.16,
+    roughness: 0.14,
+    metalness: 0.25,
+  });
+
   const helmetShell = new THREE.Mesh(
     new THREE.SphereGeometry(0.0022, 20, 18),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.14,
-      metalness: 0.25,
-    })
+    helmetMat
   );
   helmetShell.scale.set(0.95, 1.0, 1.08);
   helmetShell.castShadow = false;
   driverHead.add(helmetShell);
 
-  // Iridescent Gold/Blue Visor
+  // Visor with customizable visorColor
   const visor = new THREE.Mesh(
     new THREE.SphereGeometry(0.00225, 16, 12, -0.9, 1.8, 1.05, 0.75),
     new THREE.MeshStandardMaterial({
-      color: 0x1e6bff,
-      emissive: new THREE.Color(0x1e6bff),
+      color: visorColor,
+      emissive: new THREE.Color(visorColor),
       emissiveIntensity: 0.65,
       roughness: 0.08,
       metalness: 0.9,
@@ -932,29 +940,47 @@ export function buildMicroKart() {
         if (child.geometry && !child.geometry.attributes.normal) {
           child.geometry.computeVertexNormals();
         }
+        // Deep clone materials per kart instance so rival helmet colors don't overwrite each other
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((m) => (m ? m.clone() : m));
+        } else if (child.material) {
+          child.material = child.material.clone();
+        }
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         for (const mat of mats) {
           if (!mat) continue;
           const mName = (mat.name || '').toLowerCase();
           if (mName.includes('visor')) {
-            // Unmistakable deep jet-black helmet visor shield & recessed exhaust bores
-            if (mat.color) mat.color.setHex(0x050608);
+            // Visor shield
+            if (mat.color) mat.color.setHex(visorColor === 0x1e6bff ? 0x050608 : visorColor);
             mat.roughness = 0.14;
             mat.metalness = 0.08;
             mat.envMapIntensity = 0.22;
             if (mat.emissive) mat.emissive.setHex(0x000000);
             mat.emissiveIntensity = 0.0;
             mat.needsUpdate = true;
-          } else if (mName.includes('helmet') || mName.includes('white')) {
-            // Crisp Pearl White for the smooth full-face racing helmet, shoulder stripes, wing trailing-edge stripe & flush painted "4"
-            if (mat.color) mat.color.setHex(0xf4f6fa);
-            mat.roughness = 0.20;
-            mat.metalness = 0.08;
-            mat.envMapIntensity = 0.95;
-            if (mat.emissive) mat.emissive.setHex(0x181c24);
-            mat.emissiveIntensity = 0.12;
-            attachKartReadabilityRimShader(mat, 'kart_white_rim_v1', 0.22, 0.28, 0.18);
-            mat.needsUpdate = true;
+          } else if (mName.includes('helmet') || (mName.includes('white') && !mName.includes('plate') && !mName.includes('stripe'))) {
+            // Driver full-face helmet: if helmetColor is customized for opponents, apply it with vibrancy!
+            if (helmetColor !== 0xffffff) {
+              if (mat.color) mat.color.setHex(helmetColor);
+              mat.roughness = 0.18;
+              mat.metalness = 0.25;
+              mat.envMapIntensity = 1.15;
+              if (mat.emissive) mat.emissive.setHex(helmetColor);
+              mat.emissiveIntensity = 0.28;
+              attachKartReadabilityRimShader(mat, `kart_helmet_${helmetColor.toString(16)}`, 0.28, 0.32, 0.26);
+              mat.needsUpdate = true;
+            } else {
+              // Crisp Pearl White for player #4
+              if (mat.color) mat.color.setHex(0xf4f6fa);
+              mat.roughness = 0.20;
+              mat.metalness = 0.08;
+              mat.envMapIntensity = 0.95;
+              if (mat.emissive) mat.emissive.setHex(0x181c24);
+              mat.emissiveIntensity = 0.12;
+              attachKartReadabilityRimShader(mat, 'kart_white_rim_v1', 0.22, 0.28, 0.18);
+              mat.needsUpdate = true;
+            }
           } else if (mName.includes('crimson') || mName.includes('red')) {
             // Reflective metallic crimson racing body & constant-width helmet stripe with readability floor + grazing rim
             if (mat.color) mat.color.setHex(0xe01b24);
@@ -1068,6 +1094,28 @@ export function buildMicroKart() {
     }
   }
 
+  function setHelmetColor(hex) {
+    if (helmetMat) {
+      helmetMat.color.setHex(hex);
+      helmetMat.emissive.setHex(hex);
+    }
+    if (attachedGlbScene) {
+      attachedGlbScene.traverse((c) => {
+        if (c.isMesh && c.material) {
+          const mats = Array.isArray(c.material) ? c.material : [c.material];
+          for (const m of mats) {
+            const mName = (m.name || '').toLowerCase();
+            if (mName.includes('helmet') || (mName.includes('white') && !mName.includes('plate') && !mName.includes('stripe'))) {
+              m.color.setHex(hex);
+              m.emissive.setHex(hex);
+              m.needsUpdate = true;
+            }
+          }
+        }
+      });
+    }
+  }
+
   return {
     kartRoot,
     chassisGroup,
@@ -1075,6 +1123,7 @@ export function buildMicroKart() {
     sparkFireLight,
     setFireLightMultiplier,
     setCockpitRoadOnly,
+    setHelmetColor,
     updateWheels,
     updateKartVisuals,
     attachGlbKart,

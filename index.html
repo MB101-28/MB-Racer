@@ -65,7 +65,7 @@
             <!-- Top-Right Lap Counter & Lap Timer (Visible in 1P & 2P Views) -->
             <div id="hud-lap-widget" class="hud-lap-widget">
               <div id="hud-lap-header" class="hud-lap-header">
-                LAP <span id="hud-lap-curr" class="hud-lap-curr">1</span>/3
+                LAP <span id="hud-lap-curr" class="hud-lap-curr">1</span>/3 · <span id="hud-top-pos" class="hud-top-pos">1ST</span>
               </div>
               <div id="hud-lap-timer" class="hud-lap-timer" aria-label="00:00.00"><span class="timer-digit" id="lap-d0">0</span><span class="timer-digit" id="lap-d1">0</span><span class="timer-sep">:</span><span class="timer-digit" id="lap-d2">0</span><span class="timer-digit" id="lap-d3">0</span><span class="timer-sep">.</span><span class="timer-digit" id="lap-d4">0</span><span class="timer-digit" id="lap-d5">0</span></div>
               <div id="hud-lap-split" class="hud-lap-split hidden"></div>
@@ -171,9 +171,20 @@
             </div>
           </div>
 
+          <!-- 4-Racer Starting Grid Guide -->
+          <div class="welcome-racers-card">
+            <div class="welcome-control-label">STARTING GRID · 4 RACERS 🏎️🏁</div>
+            <div class="welcome-racers-row">
+              <div class="welcome-racer-chip"><span class="racer-helm-dot" style="background:#ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></span><span class="racer-tag">YOU #4 🔴</span></div>
+              <div class="welcome-racer-chip"><span class="racer-helm-dot" style="background:#00e5ff; box-shadow: 0 0 8px rgba(0,229,255,0.8);"></span><span class="racer-tag">VOLT #7 ⚡</span></div>
+              <div class="welcome-racer-chip"><span class="racer-helm-dot" style="background:#ffbb00; box-shadow: 0 0 8px rgba(255,187,0,0.8);"></span><span class="racer-tag">BLAZE #12 🔥</span></div>
+              <div class="welcome-racer-chip"><span class="racer-helm-dot" style="background:#9933ff; box-shadow: 0 0 8px rgba(153,51,255,0.8);"></span><span class="racer-tag">SHADOW #23 👾</span></div>
+            </div>
+          </div>
+
           <div class="welcome-footer-row">
             <button id="btn-welcome-start" class="welcome-start-btn" type="button">
-              <span id="welcome-start-text" class="welcome-start-text">START TIME TRIAL</span>
+              <span id="welcome-start-text" class="welcome-start-text">START GRAND PRIX</span>
               <kbd id="welcome-enter-kbd" class="welcome-enter-kbd">ENTER ↵</kbd>
               <span class="welcome-btn-progress-track" aria-hidden="true">
                 <span id="welcome-btn-progress-fill" class="welcome-btn-progress-fill"></span>
@@ -192,6 +203,13 @@
           <h2 id="hud-finish-title" class="hud-finish-title">FINISH</h2>
           <div id="hud-finish-time" class="hud-finish-time">00:00.00</div>
           <div id="hud-finish-sub" class="hud-finish-sub">BEST LAP 00:00.00</div>
+
+          <!-- 4-Racer Grand Prix Classification Results -->
+          <div id="finish-classification-card" class="finish-classification-card">
+            <div class="finish-table-title">GRAND PRIX CLASSIFICATION 🏆</div>
+            <div id="finish-leaderboard-rows" class="finish-leaderboard-rows"></div>
+          </div>
+
           <div class="finish-actions-row">
             <button id="btn-finish-race-again" class="welcome-start-btn finish-action-btn" type="button">
               <span class="welcome-start-text">RACE AGAIN</span>
@@ -207,9 +225,17 @@
 
       <!-- Bottom Row: 3D Tilted Racetrack Minimap (Bottom-Left) | Angled Segmented Speedometer HUD (Bottom-Right) -->
       <footer class="hud-bottom-bar">
-        <!-- Bottom-Left: Borderless Horizontally-Tilted 3D Racetrack Outline & Cyan Glowing Dot -->
-        <div class="hud-minimap-widget" title="Live Racetrack Position">
-          <canvas id="minimap-canvas" width="600" height="390"></canvas>
+        <!-- Bottom-Left: Borderless Horizontally-Tilted 3D Racetrack Outline, Rivals Blips & Live Position -->
+        <div class="hud-minimap-cluster">
+          <div class="hud-minimap-widget" title="Live Racetrack Position">
+            <canvas id="minimap-canvas" width="600" height="390"></canvas>
+          </div>
+          <!-- Live Race Position Badge (Always visible during Driving Mode) -->
+          <div id="hud-live-pos-pill" class="hud-live-pos-pill" title="Current Race Position">
+            <span class="pos-prefix">POS</span>
+            <span id="hud-pos-rank" class="pos-rank">1ST</span>
+            <span class="pos-total">/ 4</span>
+          </div>
         </div>
 
         <!-- Bottom-Right: Sleek Angled Segmented Speed Bar + Italic KM/H & Speed Readout -->

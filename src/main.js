@@ -18,6 +18,7 @@ import { buildRoomEnvironment } from './scene/RoomEnvironmentBuilder.js';
 import { createKartPhysicsController } from './physics/KartPhysicsController.js';
 import { createWebAudioSynth } from './audio/WebAudioSynth.js';
 import { createPowerupManager } from './game/PowerupManager.js';
+import { createOpponentManager } from './game/OpponentManager.js';
 
 async function initApp() {
   const container = document.getElementById('canvas-container');
@@ -279,6 +280,9 @@ async function initApp() {
           ? 0.78
           : 0.58;
     microKart.kartRoot.scale.setScalar(targetScale);
+    if (typeof opponentManager !== 'undefined' && opponentManager) {
+      opponentManager.syncKartScales(targetScale);
+    }
   }
 
   // ZERO-GEOMETRY-PASS BOKEHPASS RENDER:
@@ -736,8 +740,13 @@ async function initApp() {
       disposeGroupGeometries(coaster.trackGroup);
       glbContainerGroup.add(glbScene);
     });
+    let cachedGlbKartScene = null;
     tryLoadGlbAsset('kart_1to87.glb', 'kart', (glbScene) => {
+      cachedGlbKartScene = glbScene;
       microKart.attachGlbKart(glbScene);
+      if (typeof opponentManager !== 'undefined' && opponentManager) {
+        opponentManager.attachGlbToOpponents(glbScene);
+      }
       syncKartScaleForCamera(activeCameraMode);
     });
     tryLoadGlbAsset('room_environment.glb', 'room', (glbScene) => {
@@ -921,6 +930,21 @@ async function initApp() {
       powerupManager.activatePowerup();
     });
   }
+
+  const opponentManager = createOpponentManager({
+    scene,
+    physics,
+    audioSynth,
+    powerupManager,
+    onRivalAlert: (msg, color) => {
+      showPowerupBanner(msg, color);
+    },
+  });
+
+  if (cachedGlbKartScene) {
+    opponentManager.attachGlbToOpponents(cachedGlbKartScene);
+  }
+  syncKartScaleForCamera(activeCameraMode);
 
   // -------------------------------------------------------------------------
   // 4c. CLEAN COCKPIT / IMMERSIVE DRIVING HUD MODE (Only Speed, Map & Active Item)
@@ -1998,34 +2022,38 @@ async function initApp() {
       powerupManager.drawMinimapMarkers(radarCtx, mapMinimapX, mapMinimapY);
     }
 
+    if (opponentManager) {
+      opponentManager.drawMinimapOpponents(radarCtx, mapMinimapX, mapMinimapY);
+    }
+
     const kx = mapMinimapX(st.position.x, st.position.y, st.position.z);
     const ky = mapMinimapY(st.position.x, st.position.y, st.position.z);
 
     radarCtx.save();
-    // Cyan glowing dot for live track progress (scaled for 2x Retina canvas)
-    const haloGrad = radarCtx.createRadialGradient(kx, ky, 3.0, kx, ky, 26.0);
-    haloGrad.addColorStop(0.0, 'rgba(0, 240, 255, 0.90)');
-    haloGrad.addColorStop(0.45, 'rgba(0, 224, 255, 0.44)');
-    haloGrad.addColorStop(1.0, 'rgba(0, 210, 255, 0.0)');
+    // Distinct Player Dot: Bright Pearl White & Crimson Ring
+    const haloGrad = radarCtx.createRadialGradient(kx, ky, 3.0, kx, ky, 24.0);
+    haloGrad.addColorStop(0.0, 'rgba(255, 43, 30, 0.95)');
+    haloGrad.addColorStop(0.45, 'rgba(255, 43, 30, 0.45)');
+    haloGrad.addColorStop(1.0, 'rgba(255, 43, 30, 0.0)');
     radarCtx.fillStyle = haloGrad;
     radarCtx.beginPath();
-    radarCtx.arc(kx, ky, 26.0, 0, Math.PI * 2);
+    radarCtx.arc(kx, ky, 24.0, 0, Math.PI * 2);
     radarCtx.fill();
 
-    // Crisp dark ring around dot for contrast against thick white track
-    radarCtx.fillStyle = 'rgba(0, 12, 22, 0.55)';
+    // Dark ring
+    radarCtx.fillStyle = 'rgba(10, 14, 22, 0.85)';
     radarCtx.beginPath();
-    radarCtx.arc(kx, ky, 12.2, 0, Math.PI * 2);
+    radarCtx.arc(kx, ky, 11.5, 0, Math.PI * 2);
     radarCtx.fill();
 
-    // Bright electric-cyan dot body
-    radarCtx.fillStyle = '#00e8ff';
+    // Crimson rim
+    radarCtx.fillStyle = '#ff2b1e';
     radarCtx.beginPath();
-    radarCtx.arc(kx, ky, 10.2, 0, Math.PI * 2);
+    radarCtx.arc(kx, ky, 9.5, 0, Math.PI * 2);
     radarCtx.fill();
 
-    // Crisp ice-cyan center core
-    radarCtx.fillStyle = '#dcfdff';
+    // Pearl white center core
+    radarCtx.fillStyle = '#ffffff';
     radarCtx.beginPath();
     radarCtx.arc(kx, ky, 4.8, 0, Math.PI * 2);
     radarCtx.fill();
@@ -2033,6 +2061,9 @@ async function initApp() {
   }
 
   // Cache HUD DOM elements
+  const elPosRank = document.getElementById('hud-pos-rank');
+  const elTopPos = document.getElementById('hud-top-pos');
+  const elFinishLeaderboardRows = document.getElementById('finish-leaderboard-rows');
   const elScaleSpeed = document.getElementById('hud-scale-speed');
   const elLapCurr = document.getElementById('hud-lap-curr');
   const elLapTimer = document.getElementById('hud-lap-timer');
@@ -2105,6 +2136,31 @@ async function initApp() {
       const bestVal = bestLap != null ? bestLap : (totalTime || 0) / 3;
       elFinishSub.textContent = `BEST LAP ${formatLapTimerMMSSCC(bestVal)}`;
     }
+
+    if (elFinishLeaderboardRows && opponentManager) {
+      const finalRanks = opponentManager.calculatePositions(physics.state);
+      elFinishLeaderboardRows.innerHTML = '';
+      finalRanks.forEach((racer) => {
+        const row = document.createElement('div');
+        row.className = `finish-racer-row ${racer.isPlayer ? 'is-player' : ''}`;
+        const posTag = racer.position === 1 ? '1ST' : racer.position === 2 ? '2ND' : racer.position === 3 ? '3RD' : '4TH';
+        const isPl = racer.isPlayer;
+        const timeDiff = racer.position === 1
+          ? (isPl ? formatLapTimerMMSSCC(totalTime) : 'LEADER')
+          : (isPl ? formatLapTimerMMSSCC(totalTime) : `+${((racer.position - 1) * 0.95 + 0.35).toFixed(2)}s`);
+
+        row.innerHTML = `
+          <div class="finish-racer-left">
+            <span class="finish-pos-tag p-${racer.position}">${posTag}</span>
+            <span class="racer-helm-dot" style="background:${isPl ? '#ffffff' : racer.accentHex}; box-shadow: 0 0 8px ${racer.accentHex};"></span>
+            <span class="finish-racer-name">${racer.emoji} ${racer.name} #${racer.number}</span>
+          </div>
+          <div class="finish-racer-time">${timeDiff}</div>
+        `;
+        elFinishLeaderboardRows.appendChild(row);
+      });
+    }
+
     if (elFinishOverlay) {
       elFinishOverlay.classList.remove('hidden');
     }
@@ -2176,6 +2232,9 @@ async function initApp() {
     const btnAutoText = document.getElementById('autopilot-btn-text');
     if (btnAutoText) btnAutoText.textContent = 'Manual WASD Racing';
     physics.resetToStart();
+    if (opponentManager) {
+      opponentManager.resetToGrid();
+    }
     physics.state.countdownLocked = true;
     physics.state.raceClockActive = false;
 
@@ -2682,6 +2741,22 @@ async function initApp() {
       }
     }
 
+    if (opponentManager) {
+      const liveRanks = opponentManager.calculatePositions(st);
+      const playerRank = liveRanks.find((p) => p.isPlayer);
+      if (playerRank) {
+        const pNum = playerRank.position;
+        const pTag = pNum === 1 ? '1ST' : pNum === 2 ? '2ND' : pNum === 3 ? '3RD' : '4TH';
+        if (elPosRank && elPosRank.textContent !== pTag) {
+          elPosRank.textContent = pTag;
+          elPosRank.className = `pos-rank pos-${pNum}`;
+        }
+        if (elTopPos && elTopPos.textContent !== pTag) {
+          elTopPos.textContent = pTag;
+        }
+      }
+    }
+
     drawMinimapRadar(st);
   }
 
@@ -2875,6 +2950,11 @@ async function initApp() {
     // 1b. Step 3D Powerup System (Boxes, Collision, Active Boost/Shield/Magnet)
     if (powerupManager) {
       powerupManager.update(dt, elapsedTime, st);
+    }
+
+    // 1c. Step AI Opponent Racers (Kinematics, Overtaking, Powerups, Bumper Collisions)
+    if (opponentManager) {
+      opponentManager.update(dt, elapsedTime, st, powerupManager, audioSynth);
     }
 
     // 1c. Automatic Clean Driving HUD transition when rolling on track

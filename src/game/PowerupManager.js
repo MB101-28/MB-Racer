@@ -700,11 +700,33 @@ export function createPowerupManager({ scene, physics, microKart, audioSynth, on
     ctx.restore();
   }
 
+  function checkOpponentBoxCollision(pos) {
+    for (let i = 0; i < pickupBoxes.length; i++) {
+      const box = pickupBoxes[i];
+      if (!box.active) continue;
+      box.gemPivot.getWorldPosition(_boxWorldPos);
+      if (_boxWorldPos.distanceTo(pos) < 0.024) {
+        box.active = false;
+        box.respawnTimer = 7.0;
+        box.boxGroup.visible = false;
+        triggerBurstEffect(_boxWorldPos.x, _boxWorldPos.y, _boxWorldPos.z, 0xffea00);
+        if (audioSynth && audioSynth.playPowerupPickup) {
+          audioSynth.playPowerupPickup();
+        }
+        const randomKey = POWERUP_KEYS[Math.floor(Math.random() * POWERUP_KEYS.length)];
+        return POWERUP_TYPES[randomKey];
+      }
+    }
+    return null;
+  }
+
   return {
     rootGroup,
     pickupBoxes,
     update,
     activatePowerup,
+    checkOpponentBoxCollision,
+    triggerBurstEffect,
     getStoredItem: () => storedItem,
     getActiveItem: () => activeItem,
     drawMinimapMarkers,

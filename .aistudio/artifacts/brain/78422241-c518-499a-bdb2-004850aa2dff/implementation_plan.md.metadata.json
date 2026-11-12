@@ -1,6 +1,0 @@
-{
-  "summary":  "Implementation plan for Clean Cockpit / Immersive Driving HUD: hides the top bar, lap timer, and brand logos while driving so only the Speedometer, live 3D Minimap, and compact Active Powerup item icon remain visible. Includes H-key toggle and top-edge hover peek.",
-  "updatedAt":  "2026-11-09T09:45:40.033864913Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

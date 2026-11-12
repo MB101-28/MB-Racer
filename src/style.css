@@ -1658,6 +1658,196 @@ body {
   #hud-powerup-banner-text {
     font-size: 14px;
   }
+  .welcome-racers-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
+
+/* ============================================================================
+   RIVAL RACERS & LIVE POSITION HUD
+   ============================================================================ */
+.hud-minimap-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.hud-live-pos-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: rgba(4, 8, 16, 0.82);
+  border: 1px solid rgba(0, 229, 255, 0.50);
+  border-radius: 6px;
+  padding: 3px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 0 14px rgba(0, 229, 255, 0.25);
+  backdrop-filter: blur(8px);
+  user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hud-live-pos-pill .pos-prefix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7b8fa8;
+  letter-spacing: 0.12em;
+}
+
+.hud-live-pos-pill .pos-rank {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.hud-live-pos-pill .pos-rank.pos-1 {
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.85);
+}
+.hud-live-pos-pill .pos-rank.pos-2 {
+  color: #00e5ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.85);
+}
+.hud-live-pos-pill .pos-rank.pos-3 {
+  color: #ffaa33;
+  text-shadow: 0 0 12px rgba(255, 170, 51, 0.85);
+}
+.hud-live-pos-pill .pos-rank.pos-4 {
+  color: #a855f7;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.85);
+}
+
+.hud-live-pos-pill .pos-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8fa3bd;
+}
+
+.hud-top-pos {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: #00e5ff;
+}
+
+.welcome-racers-card {
+  margin-top: 14px;
+  background: rgba(10, 16, 28, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.welcome-racers-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.welcome-racer-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(18, 26, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.racer-helm-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.racer-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e4edf8;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Grand Prix Finish Leaderboard */
+.finish-classification-card {
+  margin: 14px 0 18px;
+  background: rgba(8, 14, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.finish-table-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #00e5ff;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.finish-leaderboard-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finish-racer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(18, 26, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.finish-racer-row.is-player {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.18);
+}
+
+.finish-racer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finish-pos-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  width: 32px;
+}
+
+.finish-pos-tag.p-1 { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.6); }
+.finish-pos-tag.p-2 { color: #00e5ff; text-shadow: 0 0 8px rgba(0, 229, 255, 0.6); }
+.finish-pos-tag.p-3 { color: #ffaa33; text-shadow: 0 0 8px rgba(255, 170, 51, 0.6); }
+.finish-pos-tag.p-4 { color: #a855f7; text-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
+
+.finish-racer-name {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.finish-racer-time {
+  font-weight: 600;
+  color: #8fa3bd;
+}
+
 
 

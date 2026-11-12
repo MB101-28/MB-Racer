@@ -466,6 +466,8 @@ export async function createKartPhysicsController(splineData, manifest, roadGeo)
     state.angledIntoRail = false;
     state.steeringAway = false;
     teleportToSector(6);
+    state.lateralOffset = -0.0035;
+    syncPoseFromSpline();
   }
 
   function notifyLightsOut() {
